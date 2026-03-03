@@ -49,9 +49,16 @@ class _ProveedorFormState extends State<ProveedorForm> {
   final ProveedorRepository _proveedorRepository = ProveedorRepository();
   final AppLogger _logger = AppLogger.instance;
 
+  // Variables para manejar días
+  List<Map<String, dynamic>> diasDisponibles = [];
+  List<Map<String, dynamic>> diasSeleccionados = [];
+  String? diaSeleccionadoTemporal;
+  bool cargandoDias = true;
+
   @override
   void initState() {
     super.initState();
+    _cargarDias();
     if (widget.isEdit) {
       _nombre.text = widget.nombre;
       _direccion.text = widget.direccion;
@@ -63,6 +70,31 @@ class _ProveedorFormState extends State<ProveedorForm> {
           orElse: () => estado.first,
         );
       }
+    }
+  }
+
+  Future<void> _cargarDias() async {
+    try {
+      final dias = await _proveedorRepository.obtenerDias();
+      setState(() {
+        diasDisponibles = dias;
+        cargandoDias = false;
+      });
+
+      // Si es edición, cargar los días del proveedor
+      if (widget.isEdit && widget.id != null) {
+        final diasProveedor = await _proveedorRepository.obtenerDiasProveedor(
+          widget.id!,
+        );
+        setState(() {
+          diasSeleccionados = diasProveedor;
+        });
+      }
+    } catch (e, st) {
+      _logger.log.e('Error al cargar días', error: e, stackTrace: st);
+      setState(() {
+        cargandoDias = false;
+      });
     }
   }
 
@@ -101,13 +133,36 @@ class _ProveedorFormState extends State<ProveedorForm> {
 
       if (widget.isEdit) {
         await _proveedorRepository.updateProveedor(proveedor);
+
+        // Actualizar días: eliminar todos y agregar los nuevos
+        await _proveedorRepository.eliminarTodosDiasProveedor(widget.id!);
+        for (var dia in diasSeleccionados) {
+          await _proveedorRepository.insertarDiaProveedor(
+            widget.id!,
+            dia['id_dia'],
+          );
+        }
+
         _mostrarMensaje(
           'Éxito',
           'Proveedor actualizado correctamente',
           ContentType.success,
         );
       } else {
-        await _proveedorRepository.insertProveedor(proveedor);
+        final nuevoProveedorId = await _proveedorRepository.insertProveedor(
+          proveedor,
+        );
+
+        // Insertar los días para el nuevo proveedor
+        if (nuevoProveedorId > 0) {
+          for (var dia in diasSeleccionados) {
+            await _proveedorRepository.insertarDiaProveedor(
+              nuevoProveedorId,
+              dia['id_dia'],
+            );
+          }
+        }
+
         _mostrarMensaje(
           'Éxito',
           'Proveedor creado correctamente',
@@ -178,6 +233,56 @@ class _ProveedorFormState extends State<ProveedorForm> {
           ? Color.fromRGBO(60, 60, 60, 1)
           : Color.fromRGBO(220, 220, 220, 1),
     ).show();
+  }
+
+  void _agregarDia() {
+    if (diaSeleccionadoTemporal == null ||
+        diaSeleccionadoTemporal!.isEmpty ||
+        diaSeleccionadoTemporal == 'Seleccionar día' ||
+        diaSeleccionadoTemporal == '') {
+      // _mostrarMensaje(
+      //   'Atención',
+      //   'Por favor selecciona un día',
+      //   ContentType.warning,
+      // );
+      return;
+    } else if (diasSeleccionados.length >= 7) {
+      _mostrarMensaje(
+        'Atención',
+        'No puedes seleccionar más de 7 días',
+        ContentType.warning,
+      );
+      return;
+    }
+
+    final diaExistente = diasSeleccionados.firstWhere(
+      (dia) => dia['id_dia'].toString() == diaSeleccionadoTemporal,
+      orElse: () => {},
+    );
+
+    if (diaExistente.isNotEmpty) {
+      _mostrarMensaje(
+        'Atención',
+        'Este día ya está seleccionado',
+        ContentType.warning,
+      );
+      return;
+    }
+
+    final diaPorAgregar = diasDisponibles.firstWhere(
+      (dia) => dia['id_dia'].toString() == diaSeleccionadoTemporal,
+    );
+
+    setState(() {
+      diasSeleccionados.add(diaPorAgregar);
+      diaSeleccionadoTemporal = null;
+    });
+  }
+
+  void _quitarDia(int idDia) {
+    setState(() {
+      diasSeleccionados.removeWhere((dia) => dia['id_dia'] == idDia);
+    });
   }
 
   @override
@@ -374,6 +479,10 @@ class _ProveedorFormState extends State<ProveedorForm> {
                 ],
               ),
 
+              // Sección de Días
+              SizedBox(height: fieldSpacing * 1.5),
+              _buildSeccionDias(isMobile, isTablet, isDesktop, fieldSpacing),
+
               // Botón de confirmar
               SizedBox(height: fieldSpacing * 1.25),
               ElevatedButton(
@@ -420,6 +529,266 @@ class _ProveedorFormState extends State<ProveedorForm> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSeccionDias(
+    bool isMobile,
+    bool isTablet,
+    bool isDesktop,
+    double fieldSpacing,
+  ) {
+    final temaOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
+    final double labelFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final double inputFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+
+    if (cargandoDias) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: CircularProgressIndicator(color: Colors.blueAccent),
+        ),
+      );
+    }
+
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 16.0 : 20.0),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.blueAccent.withOpacity(0.3), width: 2),
+        borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+        color: temaOscuro
+            ? const Color.fromRGBO(30, 30, 30, 1)
+            : Colors.white.withOpacity(0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Título
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_month,
+                color: Colors.blueAccent,
+                size: isMobile ? 20 : 24,
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Días de entrega',
+                style: TextStyle(
+                  fontSize: labelFontSize + 2,
+                  fontWeight: FontWeight.bold,
+                  color: temaOscuro ? Colors.white : Colors.black,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: fieldSpacing),
+
+          // Selector de día
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: DropdownButtonFormField<String>(
+                  dropdownColor: temaOscuro ? Colors.black : Colors.white,
+                  value: diaSeleccionadoTemporal,
+                  hint: Text(
+                    'Seleccionar día',
+                    style: TextStyle(
+                      color: temaOscuro ? Colors.white70 : Colors.black54,
+                    ),
+                  ),
+                  items: diasDisponibles.map<DropdownMenuItem<String>>((dia) {
+                    // Validar si el día ya está seleccionado
+                    final yaSeleccionado = diasSeleccionados.any(
+                      (selected) => selected['id_dia'] == dia['id_dia'],
+                    );
+                    return DropdownMenuItem<String>(
+                      value: dia['id_dia'].toString(),
+                      enabled: !yaSeleccionado,
+                      child: Text(
+                        dia['nombre'],
+                        style: TextStyle(
+                          color: yaSeleccionado
+                              ? Colors.grey
+                              : (temaOscuro ? Colors.white : Colors.black),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      diaSeleccionadoTemporal = value;
+                    });
+                  },
+                  style: TextStyle(
+                    fontSize: inputFontSize,
+                    color: temaOscuro ? Colors.white : Colors.black,
+                  ),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: temaOscuro
+                        ? const Color.fromRGBO(30, 30, 30, 1)
+                        : Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+                      borderSide: BorderSide(
+                        color: Colors.blueAccent.withOpacity(0.5),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Colors.blueAccent,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+                      borderSide: BorderSide(
+                        color: Colors.blueAccent.withOpacity(0.3),
+                      ),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: isMobile ? 12.0 : 14.0,
+                      horizontal: isMobile ? 10.0 : 12.0,
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Por favor selecciona una opción';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              SizedBox(width: isMobile ? 8.0 : 12.0),
+              // Botón para agregar día
+              Container(
+                height: isMobile ? 48 : 56,
+                width: isMobile ? 48 : 56,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blueAccent, Colors.blue.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blueAccent.withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _agregarDia,
+                    borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+                    child: Icon(
+                      Icons.add,
+                      color: Colors.white,
+                      size: isMobile ? 20 : 24,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Lista de días seleccionados
+          if (diasSeleccionados.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: fieldSpacing),
+                Text(
+                  'Días seleccionados:',
+                  style: TextStyle(
+                    fontSize: labelFontSize,
+                    fontWeight: FontWeight.w600,
+                    color: temaOscuro ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+                SizedBox(height: 12),
+                Wrap(
+                  spacing: isMobile ? 8.0 : 12.0,
+                  runSpacing: isMobile ? 8.0 : 12.0,
+                  children: diasSeleccionados.map((dia) {
+                    return Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 12.0 : 14.0,
+                        vertical: isMobile ? 8.0 : 10.0,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.blueAccent.withOpacity(0.8),
+                            Colors.blue.shade600.withOpacity(0.8),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blueAccent.withOpacity(0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.event_available,
+                            color: Colors.white,
+                            size: isMobile ? 16 : 18,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            dia['nombre'],
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: inputFontSize,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => _quitarDia(dia['id_dia']),
+                            child: Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: isMobile ? 16 : 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            )
+          else
+            Padding(
+              padding: EdgeInsets.only(top: fieldSpacing / 2),
+              child: Center(
+                child: Text(
+                  'Sin días seleccionados',
+                  style: TextStyle(
+                    fontSize: labelFontSize - 2,
+                    color: temaOscuro ? Colors.white70 : Colors.black54,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -18,7 +18,6 @@ import 'package:proyecto_cd2/view/MiFAB.dart';
 import 'package:proyecto_cd2/view/widgets/inventario_vacio.dart';
 import 'package:proyecto_cd2/view/widgets/loading.dart';
 import 'package:proyecto_cd2/view/widgets/thermal_invoice_printer.dart';
-import 'package:proyecto_cd2/utils/number_to_words_spanish.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Ventas extends StatefulWidget {
@@ -571,7 +570,6 @@ class _VentasState extends State<Ventas> {
       rtnCliente: venta.rtnCliente ?? '',
       isv: venta.isv,
       subtotal: venta.subtotal,
-      totalInWords: NumberToWordsSpanish.convert(venta.total),
     );
   }
 

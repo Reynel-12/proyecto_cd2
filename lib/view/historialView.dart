@@ -6,7 +6,6 @@ import 'package:proyecto_cd2/model/app_logger.dart';
 import 'package:proyecto_cd2/model/preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_cd2/model/venta.dart';
-import 'package:proyecto_cd2/utils/number_to_words_spanish.dart';
 import 'package:proyecto_cd2/view/widgets/thermal_invoice_printer.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -724,7 +723,6 @@ class _HistorialState extends State<Historial> {
                       rtnCliente: venta.rtnCliente,
                       isv: venta.isv,
                       subtotal: venta.subtotal,
-                      totalInWords: NumberToWordsSpanish.convert(venta.total),
                     );
                     Navigator.push(
                       context,
