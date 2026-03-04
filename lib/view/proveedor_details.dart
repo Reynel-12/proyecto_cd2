@@ -28,6 +28,7 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
   List<Producto> _productos = [];
   bool _isLoading = true;
   late Proveedor _currentProveedor;
+  List<Map<String, dynamic>> diasProveedores = [];
 
   @override
   void initState() {
@@ -47,11 +48,17 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
         _currentProveedor.id!,
       );
 
+      final listaDiasProveedores = await _proveedorRepository
+          .obtenerDiasProveedor(_currentProveedor.id!);
+
       if (mounted) {
         setState(() {
           _productos = productos;
           if (updatedProveedorList.isNotEmpty) {
             _currentProveedor = updatedProveedorList.first;
+          }
+          if (listaDiasProveedores.isNotEmpty) {
+            diasProveedores = listaDiasProveedores;
           }
           _isLoading = false;
         });
@@ -368,6 +375,13 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
               Icons.info,
               'Correo / Información',
               _currentProveedor.correo ?? 'No registrado',
+              isDark,
+            ),
+            const Divider(),
+            _buildInfoRow(
+              Icons.info,
+              'Días de entrega',
+              diasProveedores.map((dia) => dia['nombre']).join(', '),
               isDark,
             ),
             const Divider(),

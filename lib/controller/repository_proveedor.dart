@@ -111,11 +111,11 @@ class ProveedorRepository {
   Future<List<Map<String, dynamic>>> obtenerDiasProveedor(int proveedorId) async {
     try {
       final db = await dbHelper.database;
-      return await db.rawQuery(
-        'SELECT d.id_dia, d.nombre FROM dias d '
-        'INNER JOIN dias_proveedores dp ON d.id_dia = dp.id_dia '
-        'WHERE dp.id_proveedor = ? '
-        'ORDER BY d.id_dia ASC',
+      return await db.rawQuery('''
+        SELECT d.id_dia, d.nombre FROM dias d 
+        INNER JOIN dias_proveedores dp ON d.id_dia = dp.id_dia 
+        WHERE dp.id_proveedor = ? 
+        ORDER BY d.id_dia ASC''',
         [proveedorId],
       );
     } catch (e, st) {

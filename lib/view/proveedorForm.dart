@@ -45,6 +45,7 @@ class _ProveedorFormState extends State<ProveedorForm> {
   final _formKey = GlobalKey<FormState>();
   List<String> estado = ['Activo', 'Inactivo'];
   String? selectedEstado;
+  bool isValidateDay = true;
 
   final ProveedorRepository _proveedorRepository = ProveedorRepository();
   final AppLogger _logger = AppLogger.instance;
@@ -116,7 +117,15 @@ class _ProveedorFormState extends State<ProveedorForm> {
   }
 
   void _guardarProveedor() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      if (diasSeleccionados.isEmpty) {
+        setState(() {
+          isValidateDay = false;
+        });
+        return;
+      }
+      return;
+    }
     try {
       final proveedor = Proveedor(
         id: widget.id,
@@ -240,11 +249,11 @@ class _ProveedorFormState extends State<ProveedorForm> {
         diaSeleccionadoTemporal!.isEmpty ||
         diaSeleccionadoTemporal == 'Seleccionar día' ||
         diaSeleccionadoTemporal == '') {
-      // _mostrarMensaje(
-      //   'Atención',
-      //   'Por favor selecciona un día',
-      //   ContentType.warning,
-      // );
+      _mostrarMensaje(
+        'Atención',
+        'Por favor selecciona un día',
+        ContentType.warning,
+      );
       return;
     } else if (diasSeleccionados.length >= 7) {
       _mostrarMensaje(
@@ -655,12 +664,12 @@ class _ProveedorFormState extends State<ProveedorForm> {
                       horizontal: isMobile ? 10.0 : 12.0,
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null) {
-                      return 'Por favor selecciona una opción';
-                    }
-                    return null;
-                  },
+                  // validator: (value) {
+                  //   if (value == null) {
+                  //     return 'Por favor selecciona una opción';
+                  //   }
+                  //   return null;
+                  // },
                 ),
               ),
               SizedBox(width: isMobile ? 8.0 : 12.0),
@@ -782,8 +791,15 @@ class _ProveedorFormState extends State<ProveedorForm> {
                   'Sin días seleccionados',
                   style: TextStyle(
                     fontSize: labelFontSize - 2,
-                    color: temaOscuro ? Colors.white70 : Colors.black54,
+                    color: !isValidateDay
+                        ? Colors.red
+                        : temaOscuro
+                        ? Colors.white70
+                        : Colors.black54,
                     fontStyle: FontStyle.italic,
+                    fontWeight: !isValidateDay
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                 ),
               ),
