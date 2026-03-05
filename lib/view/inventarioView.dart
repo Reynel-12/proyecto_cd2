@@ -1,3 +1,4 @@
+import 'package:proyecto_cd2/view/inventario_optimo.dart';
 import 'package:proyecto_cd2/view/productoForm.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:diacritic/diacritic.dart';
@@ -256,11 +257,11 @@ class _InventarioState extends State<Inventario> {
                             ),
                           ),
                           PopupMenuItem(
-                            value: 'exportar_pdf',
+                            value: 'inventario_optimo',
                             child: Row(
                               children: [
                                 Icon(
-                                  Icons.picture_as_pdf,
+                                  Icons.price_change,
                                   color:
                                       Provider.of<TemaProveedor>(
                                         context,
@@ -268,11 +269,12 @@ class _InventarioState extends State<Inventario> {
                                       ).esModoOscuro
                                       ? Colors.white
                                       : Colors.black,
+                                  // Tamaño responsivo del icono
                                   size: isMobile ? 20.0 : 22.0,
                                 ),
                                 SizedBox(width: isMobile ? 6.0 : 8.0),
                                 Text(
-                                  'Exportar inventario PDF',
+                                  'Inventario óptimo',
                                   style: TextStyle(
                                     fontSize: isMobile ? 14.0 : 16.0,
                                   ),
@@ -402,6 +404,18 @@ class _InventarioState extends State<Inventario> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => Nuevoproducto(),
+                                ),
+                              ).then((value) {
+                                if (value == true) {
+                                  cargarDatos();
+                                }
+                              });
+                              break;
+                            case 'inventario_optimo':
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => InventarioOptimo(),
                                 ),
                               ).then((value) {
                                 if (value == true) {

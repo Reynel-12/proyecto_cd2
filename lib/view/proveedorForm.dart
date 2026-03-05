@@ -19,6 +19,7 @@ class ProveedorForm extends StatefulWidget {
   String fechaRegistro;
   String fechaActualizacion;
   String estado;
+  List<Map<String, dynamic>> diasSeleccionados = [];
 
   ProveedorForm({
     super.key,
@@ -31,7 +32,8 @@ class ProveedorForm extends StatefulWidget {
     this.fechaRegistro = '',
     this.fechaActualizacion = '',
     this.estado = '',
-  });
+    List<Map<String, dynamic>>? diasSeleccionados,
+  }) : diasSeleccionados = diasSeleccionados ?? [];
 
   @override
   State<ProveedorForm> createState() => _ProveedorFormState();
@@ -71,6 +73,9 @@ class _ProveedorFormState extends State<ProveedorForm> {
           orElse: () => estado.first,
         );
       }
+      if (widget.diasSeleccionados.isNotEmpty) {
+        diasSeleccionados = List.from(widget.diasSeleccionados);
+      }
     }
   }
 
@@ -83,14 +88,14 @@ class _ProveedorFormState extends State<ProveedorForm> {
       });
 
       // Si es edición, cargar los días del proveedor
-      if (widget.isEdit && widget.id != null) {
-        final diasProveedor = await _proveedorRepository.obtenerDiasProveedor(
-          widget.id!,
-        );
-        setState(() {
-          diasSeleccionados = diasProveedor;
-        });
-      }
+      // if (widget.isEdit && widget.id != null) {
+      //   final diasProveedor = await _proveedorRepository.obtenerDiasProveedor(
+      //     widget.id!,
+      //   );
+      //   setState(() {
+      //     diasSeleccionados = diasProveedor;
+      //   });
+      // }
     } catch (e, st) {
       _logger.log.e('Error al cargar días', error: e, stackTrace: st);
       setState(() {

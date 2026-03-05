@@ -6,7 +6,6 @@ import 'package:proyecto_cd2/model/app_logger.dart';
 import 'package:proyecto_cd2/model/preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_cd2/model/venta.dart';
-import 'package:proyecto_cd2/view/widgets/thermal_invoice_printer.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class Historial extends StatefulWidget {
@@ -679,71 +678,6 @@ class _HistorialState extends State<Historial> {
                     ),
                   ),
                 ],
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(
-                left: cardPadding,
-                right: cardPadding,
-                bottom: cardPadding,
-              ),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final data = InvoiceData(
-                      typeOrder: 'Venta',
-                      businessRtn: venta.rtnEmisor,
-                      businessName: venta.razonSocialEmisor,
-                      businessAddress: '',
-                      businessPhone: '',
-                      businessEmail: '',
-                      invoiceNumber: numeroFactura,
-                      date: fecha,
-                      hora: hora,
-                      cashier: 'Principal',
-                      customerName: venta.nombreCliente,
-                      items: detalles.map((detalle) {
-                        return InvoiceItem(
-                          description:
-                              '${detalle.producto} - ${detalle.unidadMedida}',
-                          quantity: detalle.cantidad,
-                          unitPrice: detalle.precio,
-                          isvPercent: detalle.isv,
-                          discount: detalle.descuento,
-                        );
-                      }).toList(),
-                      total: total,
-                      recibido: montoPagado,
-                      metodoPago: venta.metodoPago,
-                      notes: '¡Gracias por su compra!',
-                      cai: venta.cai,
-                      rangoAutorizado: venta.rangoAutorizado,
-                      fechaLimite: venta.fechaLimiteCai,
-                      rtnCliente: venta.rtnCliente,
-                      isv: venta.isv,
-                      subtotal: venta.subtotal,
-                    );
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ThermalInvoicePreview(data: data),
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.receipt_long),
-                  label: Text(
-                    'Generar factura',
-                    style: TextStyle(fontSize: subtitleFontSize + 1),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
               ),
             ),
           ],

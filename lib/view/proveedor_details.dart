@@ -88,6 +88,7 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
           estado: _currentProveedor.estado ?? 'Activo',
           fechaRegistro: _currentProveedor.fechaRegistro ?? '',
           fechaActualizacion: _currentProveedor.fechaActualizacion ?? '',
+          diasSeleccionados: diasProveedores,
         ),
       ),
     ).then((value) {
@@ -266,12 +267,14 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
         children: [
           Expanded(
             flex: 1,
-            child: Column(
-              children: [
-                _buildHeader(isDark),
-                const SizedBox(height: 24),
-                _buildInfoSection(isDark),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildHeader(isDark),
+                  const SizedBox(height: 24),
+                  _buildInfoSection(isDark),
+                ],
+              ),
             ),
           ),
           const SizedBox(width: 32),

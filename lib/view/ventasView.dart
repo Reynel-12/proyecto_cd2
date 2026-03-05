@@ -1,4 +1,3 @@
-import 'package:proyecto_cd2/view/widgets/modal_print_movil.dart';
 import 'package:proyecto_cd2/view/widgets/discount_dialog.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
@@ -17,7 +16,6 @@ import 'package:proyecto_cd2/model/venta.dart';
 import 'package:proyecto_cd2/view/MiFAB.dart';
 import 'package:proyecto_cd2/view/widgets/inventario_vacio.dart';
 import 'package:proyecto_cd2/view/widgets/loading.dart';
-import 'package:proyecto_cd2/view/widgets/thermal_invoice_printer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Ventas extends StatefulWidget {
@@ -486,29 +484,6 @@ class _VentasState extends State<Ventas> {
         );
         return;
       }
-      // await _sarService.actualizarCorrelativo(); // Actualizar correlativo SAR
-
-      final data = _crearInvoiceData(detalleVenta, venta);
-
-      // Mostrar el modal y esperar la respuesta
-      final bool? shouldPrint = await EnhancedConfirmationModalPrintMovil.show(
-        context: context,
-        title: '¿Deseas generar factura?',
-        confirmText: 'Confirmar',
-        cancelText: 'Cancelar',
-        icon: Icons.print,
-        accentColor: Colors.blueAccent,
-      );
-
-      // Si el usuario confirmó, navegar a la pantalla de impresión
-      if (shouldPrint == true) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ThermalInvoicePreview(data: data, paperWidthMm: 88),
-          ),
-        );
-      }
 
       actualizarInventario();
       setState(() {
@@ -533,46 +508,6 @@ class _VentasState extends State<Ventas> {
     }
   }
 
-  InvoiceData _crearInvoiceData(List<DetalleVenta> productos, Venta venta) {
-    DateTime fechaVenta = DateTime.parse(venta.fecha);
-    String fecha =
-        "${fechaVenta.day.toString().padLeft(2, '0')}/${fechaVenta.month.toString().padLeft(2, '0')}/${fechaVenta.year}";
-    String hora =
-        "${fechaVenta.hour.toString().padLeft(2, '0')}:${fechaVenta.minute.toString().padLeft(2, '0')}";
-    return InvoiceData(
-      typeOrder: 'Venta',
-      businessRtn: '',
-      businessName: '',
-      businessAddress: '',
-      businessPhone: '',
-      businessEmail: '',
-      invoiceNumber: venta.numeroFactura,
-      date: fecha,
-      hora: hora,
-      cashier: venta.cajero,
-      customerName: venta.nombreCliente ?? '',
-      items: productos.map((item) {
-        return InvoiceItem(
-          description: item.descripcion,
-          quantity: item.cantidad,
-          unitPrice: item.precioUnitario,
-          discount: item.descuento,
-          isvPercent: item.isv,
-        );
-      }).toList(),
-      total: venta.total,
-      recibido: venta.montoPagado!,
-      metodoPago: _metodoPago,
-      notes: '¡Gracias por su compra!',
-      cai: venta.cai ?? '',
-      rangoAutorizado: "",
-      fechaLimite: '',
-      rtnCliente: venta.rtnCliente ?? '',
-      isv: venta.isv,
-      subtotal: venta.subtotal,
-    );
-  }
-
   void _calcularTotal() {
     _total = _productosSeleccionados.fold(
       0.0,
@@ -588,26 +523,6 @@ class _VentasState extends State<Ventas> {
       });
     });
   }
-
-  // void _mostrarMensaje(String titulo, String mensaje, ContentType type) {
-  //   final snackBar = SnackBar(
-  //     /// need to set following properties for best effect of awesome_snackbar_content
-  //     elevation: 0,
-  //     behavior: SnackBarBehavior.floating,
-  //     backgroundColor: Colors.transparent,
-  //     content: AwesomeSnackbarContent(
-  //       title: titulo,
-  //       message: mensaje,
-
-  //       /// change contentType to ContentType.success, ContentType.warning or ContentType.help for variants
-  //       contentType: type,
-  //     ),
-  //   );
-
-  //   ScaffoldMessenger.of(context)
-  //     ..hideCurrentSnackBar()
-  //     ..showSnackBar(snackBar);
-  // }
 
   @override
   Widget build(BuildContext context) {
