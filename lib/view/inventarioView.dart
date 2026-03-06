@@ -261,7 +261,7 @@ class _InventarioState extends State<Inventario> {
                             child: Row(
                               children: [
                                 Icon(
-                                  Icons.price_change,
+                                  Icons.inventory_2,
                                   color:
                                       Provider.of<TemaProveedor>(
                                         context,

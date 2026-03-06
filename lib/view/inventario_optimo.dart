@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:diacritic/diacritic.dart';
 import 'package:flutter/material.dart';
 import 'package:proyecto_cd2/controller/repository_inventario_optimo.dart';
 import 'package:proyecto_cd2/controller/repository_producto.dart';
@@ -6,6 +9,7 @@ import 'package:proyecto_cd2/model/app_logger.dart';
 import 'package:proyecto_cd2/model/inventario_optimo.dart';
 import 'package:proyecto_cd2/model/preferences.dart';
 import 'package:proyecto_cd2/model/producto.dart';
+import 'package:proyecto_cd2/view/barcode_scanner_view.dart';
 import 'package:proyecto_cd2/view/widgets/loading.dart';
 import 'package:provider/provider.dart';
 
@@ -17,6 +21,7 @@ class InventarioOptimo extends StatefulWidget {
 }
 
 class _InventarioOptimoState extends State<InventarioOptimo> {
+  TextEditingController searchController = TextEditingController();
   final _repositoryProducto = ProductoRepository();
   final _repositoryInventarioOptimo = InventarioOptimoRepository();
   final AppLogger _logger = AppLogger.instance;
@@ -26,6 +31,9 @@ class _InventarioOptimoState extends State<InventarioOptimo> {
 
   /// Mapa de código_producto → Producto para enriquecer resultados
   Map<String, Producto> _productosMap = {};
+  Map<String, Producto> _productosMapFiltrados = {};
+
+  String scanResult = '';
 
   @override
   void initState() {
@@ -47,6 +55,7 @@ class _InventarioOptimoState extends State<InventarioOptimo> {
       if (!mounted) return;
       setState(() {
         _productosMap = map;
+        _productosMapFiltrados = map;
         _resultado = resultado;
         _isLoading = false;
       });
@@ -54,7 +63,11 @@ class _InventarioOptimoState extends State<InventarioOptimo> {
       _logger.log.w('API no disponible: $e');
       if (!mounted) return;
       setState(() => _isLoading = false);
-      _mostrarMensaje('API no disponible', e.mensaje, ContentType.failure);
+      _mostrarMensaje(
+        'API no disponible',
+        'Servidor no disponible, intente más tarde',
+        ContentType.failure,
+      );
     } on DatosInsuficientesException catch (e) {
       _logger.log.w('Datos insuficientes: $e');
       if (!mounted) return;
@@ -79,6 +92,78 @@ class _InventarioOptimoState extends State<InventarioOptimo> {
         ContentType.failure,
       );
     }
+  }
+
+  // Función para eliminar acentos y caracteres especiales
+  String _normalizeString(String str) {
+    return removeDiacritics(str.trim().toLowerCase());
+  }
+
+  void _filterProducts(String query) {
+    final normalizedQuery = _normalizeString(query);
+
+    setState(() {
+      if (normalizedQuery.isEmpty) {
+        _productosMapFiltrados = Map.from(_productosMap);
+      } else {
+        // 1. Buscamos coincidencias por código (contains, no exact match)
+        var resultados = _productosMap.entries.where((entry) {
+          return _normalizeString(entry.key).contains(normalizedQuery);
+        }).toList();
+
+        // 2. Si no hubo por código, buscamos por nombre
+        if (resultados.isEmpty) {
+          resultados = _productosMap.entries.where((entry) {
+            return _normalizeString(
+              entry.value.nombre,
+            ).contains(normalizedQuery);
+          }).toList();
+        }
+
+        // Si no hay coincidencia, el mapa queda vacío → la lista mostrará vacío
+        _productosMapFiltrados = Map.fromEntries(resultados);
+      }
+    });
+  }
+
+  void _filterProductsByCode(String query) {
+    if (query == "-1") {
+      // El usuario canceló el escaneo
+      return;
+    }
+    if (query.isEmpty) {
+      setState(() {
+        _productosMapFiltrados = Map.from(_productosMap);
+      });
+      return;
+    }
+
+    final filtered = Map.fromEntries(
+      _productosMap.entries.where(
+        (entry) => entry.key.toLowerCase().contains(query.toLowerCase()),
+      ),
+    );
+
+    setState(() {
+      _productosMapFiltrados = filtered;
+    });
+
+    if (filtered.isEmpty) {
+      _mostrarMensaje(
+        'Atención',
+        'Producto con código: $query no encontrado',
+        ContentType.warning,
+      );
+    }
+  }
+
+  /// Filtra las recomendaciones para mostrar sólo las que coinciden con
+  /// los productos actualmente en [_productosMapFiltrados].
+  List<RecomendacionCompra> get _recomendacionesFiltradas {
+    if (_resultado == null) return [];
+    return _resultado!.recomendaciones
+        .where((r) => _productosMapFiltrados.containsKey(r.codigoProducto))
+        .toList();
   }
 
   @override
@@ -133,12 +218,109 @@ class _InventarioOptimoState extends State<InventarioOptimo> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Indicador de precisión del modelo (MAE)
-                  _buildMaeIndicador(_resultado!.mae, esModoOscuro, isMobile),
+                  // _buildMaeIndicador(_resultado!.mae, esModoOscuro, isMobile),
+                  TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor:
+                          Provider.of<TemaProveedor>(context).esModoOscuro
+                          ? const Color.fromRGBO(30, 30, 30, 1)
+                          : Colors.white,
+                      labelText: 'Buscar producto',
+                      labelStyle: TextStyle(
+                        color: Provider.of<TemaProveedor>(context).esModoOscuro
+                            ? Colors.white
+                            : Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: isMobile ? 14.0 : 16.0,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: Provider.of<TemaProveedor>(context).esModoOscuro
+                            ? Colors.white
+                            : Colors.black,
+                        size: isMobile ? 20.0 : 22.0,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          Icons.barcode_reader,
+                          color:
+                              Provider.of<TemaProveedor>(context).esModoOscuro
+                              ? Colors.white
+                              : Colors.black,
+                          size: isMobile ? 20.0 : 22.0,
+                        ),
+                        onPressed: () async {
+                          if (Platform.isAndroid || Platform.isIOS) {
+                            final scannedCode = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => BarcodeScannerView(),
+                              ),
+                            );
+
+                            if (scannedCode != null) {
+                              setState(() {
+                                scanResult = scannedCode.toString();
+                              });
+
+                              // ✅ Usar directamente scannedCode en lugar de esperar al rebuild
+                              _filterProductsByCode(scanResult);
+                            }
+                          }
+                        },
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+                        borderSide: BorderSide(
+                          color:
+                              Provider.of<TemaProveedor>(context).esModoOscuro
+                              ? Colors.white
+                              : Colors.black,
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+                        borderSide: BorderSide(
+                          color:
+                              Provider.of<TemaProveedor>(context).esModoOscuro
+                              ? Colors.white
+                              : Colors.black,
+                          width: 2.0,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+                        borderSide: BorderSide(
+                          color:
+                              Provider.of<TemaProveedor>(context).esModoOscuro
+                              ? Colors.white
+                              : Colors.black,
+                          width: 1.0,
+                        ),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: isMobile ? 12.0 : 16.0,
+                        horizontal: isMobile ? 12.0 : 16.0,
+                      ),
+                    ),
+                    style: TextStyle(
+                      fontSize: isMobile ? 14.0 : 16.0,
+                      color: Provider.of<TemaProveedor>(context).esModoOscuro
+                          ? Colors.white
+                          : Colors.black,
+                    ),
+                    onChanged: (value) {
+                      _filterProducts(value);
+                    },
+                  ),
                   SizedBox(height: isMobile ? 12.0 : 16.0),
                   Expanded(
                     child: isDesktop
-                        ? _buildGridView(_resultado!.recomendaciones)
-                        : _buildListView(_resultado!.recomendaciones),
+                        ? _buildGridView(_recomendacionesFiltradas)
+                        : _buildListView(_recomendacionesFiltradas),
                   ),
                 ],
               ),
@@ -148,44 +330,44 @@ class _InventarioOptimoState extends State<InventarioOptimo> {
 
   // ----- Widgets de contenido -----
 
-  Widget _buildMaeIndicador(double mae, bool esModoOscuro, bool isMobile) {
-    final Color maeColor = mae < 2.0
-        ? Colors.green
-        : mae < 5.0
-        ? Colors.amber
-        : Colors.red;
+  // Widget _buildMaeIndicador(double mae, bool esModoOscuro, bool isMobile) {
+  //   final Color maeColor = mae < 2.0
+  //       ? Colors.green
+  //       : mae < 5.0
+  //       ? Colors.amber
+  //       : Colors.red;
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 14.0 : 18.0,
-        vertical: isMobile ? 10.0 : 12.0,
-      ),
-      decoration: BoxDecoration(
-        color: maeColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: maeColor.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.insights_rounded,
-            color: maeColor,
-            size: isMobile ? 18 : 22,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Precisión del modelo (MAE): ${mae.toStringAsFixed(2)}',
-            style: TextStyle(
-              color: maeColor,
-              fontWeight: FontWeight.bold,
-              fontSize: isMobile ? 13.0 : 15.0,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  //   return Container(
+  //     padding: EdgeInsets.symmetric(
+  //       horizontal: isMobile ? 14.0 : 18.0,
+  //       vertical: isMobile ? 10.0 : 12.0,
+  //     ),
+  //     decoration: BoxDecoration(
+  //       color: maeColor.withValues(alpha: 0.12),
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(color: maeColor.withValues(alpha: 0.4)),
+  //     ),
+  //     child: Row(
+  //       mainAxisSize: MainAxisSize.min,
+  //       children: [
+  //         Icon(
+  //           Icons.insights_rounded,
+  //           color: maeColor,
+  //           size: isMobile ? 18 : 22,
+  //         ),
+  //         const SizedBox(width: 8),
+  //         Text(
+  //           'Precisión del modelo (MAE): ${mae.toStringAsFixed(2)}',
+  //           style: TextStyle(
+  //             color: maeColor,
+  //             fontWeight: FontWeight.bold,
+  //             fontSize: isMobile ? 13.0 : 15.0,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildEmpty(bool esModoOscuro) {
     return Center(
@@ -263,7 +445,7 @@ class _InventarioOptimoState extends State<InventarioOptimo> {
     final double cardPadding = isMobile ? 14.0 : (isTablet ? 16.0 : 18.0);
 
     // Enriquecer con datos del producto
-    final producto = _productosMap[rec.codigoProducto];
+    final producto = _productosMapFiltrados[rec.codigoProducto];
     final String nombre = producto?.nombre ?? rec.codigoProducto;
     final double precio = producto?.precioVenta ?? 0.0;
     final double costo = producto?.costo ?? 0.0;
