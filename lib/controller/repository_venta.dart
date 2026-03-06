@@ -341,6 +341,43 @@ class VentaRepository {
     }
   }
 
+  /// Retorna cada venta individual por producto para la API de inventario.
+  /// Sin agrupación: si el mismo producto se vendió varias veces el mismo día,
+  /// aparece una fila por cada venta.
+  /// Filtra solo los últimos [semanas] semanas para no sobrecargar la API.
+  Future<List<Map<String, dynamic>>> getVentasSemanalesPorProducto({
+    int semanas = 12,
+  }) async {
+    try {
+      final db = await dbHelper.database;
+      final fechaLimite = DateTime.now()
+          .subtract(Duration(days: semanas * 7))
+          .toIso8601String()
+          .substring(0, 10);
+
+      return await db.rawQuery(
+        '''
+        SELECT
+          dv.producto_id AS codigo_producto,
+          date(v.fecha) AS fecha,
+          dv.cantidad AS cantidad_vendida
+        FROM ${DBHelper.ventasTable} v
+        INNER JOIN ${DBHelper.detalleVentasTable} dv ON v.id_venta = dv.venta_id
+        WHERE date(v.fecha) >= ?
+        ORDER BY dv.producto_id, v.fecha ASC
+        ''',
+        [fechaLimite],
+      );
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al obtener ventas por producto',
+        error: e,
+        stackTrace: st,
+      );
+      return [];
+    }
+  }
+
   Future<Map<String, double>> getResumenVentas() async {
     try {
       final db = await dbHelper.database;
