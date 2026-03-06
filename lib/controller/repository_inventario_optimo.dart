@@ -63,7 +63,15 @@ class InventarioOptimoRepository {
     }
 
     // 4. Construir el body JSON
+    // Obtener solo los códigos de productos que tienen proveedor asignado
+    final productosConProveedor = productosRaw
+        .map((p) => p['id_producto'] as String)
+        .toSet();
+
+    // Filtrar ventas: solo incluir productos que estén en stock (tienen proveedor)
+    // Si se envían productos sin proveedor, la API no puede cruzar datos y produce 0 samples
     final List<Map<String, dynamic>> ventasJson = ventasRaw
+        .where((v) => productosConProveedor.contains(v['codigo_producto']))
         .map(
           (v) => {
             'codigo_producto': v['codigo_producto'] as String,
@@ -72,6 +80,13 @@ class InventarioOptimoRepository {
           },
         )
         .toList();
+
+    if (ventasJson.isEmpty) {
+      throw DatosInsuficientesException(
+        'Los productos vendidos no tienen proveedor asignado. '
+        'Asigna un proveedor a los productos para generar predicciones.',
+      );
+    }
 
     final List<Map<String, dynamic>> stockJson = productosRaw
         .map(
@@ -126,6 +141,18 @@ class InventarioOptimoRepository {
         } catch (_) {
           mensaje = response.body;
         }
+
+        // Error 400 de RandomForest = pocos datos históricos (0 samples)
+        if (response.statusCode == 400 &&
+            mensaje.contains('0 sample') &&
+            mensaje.contains('RandomForest')) {
+          throw DatosInsuficientesException(
+            'No hay suficientes ventas históricas para generar una predicción. '
+            'Registra más ventas de los productos con proveedor asignado '
+            'y vuelve a intentarlo.',
+          );
+        }
+
         throw ApiErrorException(response.statusCode, mensaje);
       }
     } on SocketException {

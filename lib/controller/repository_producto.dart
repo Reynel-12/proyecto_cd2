@@ -141,7 +141,8 @@ class ProductoRepository {
     try {
       final db = await dbHelper.database;
       return await db.rawUpdate(
-        'update productos set stock = stock + $cantidad where id_producto = $id',
+        'UPDATE productos SET stock = stock + ? WHERE id_producto = ?',
+        [cantidad, id],
       );
     } catch (e, st) {
       _logger.log.e('Error al agregar inventario', error: e, stackTrace: st);

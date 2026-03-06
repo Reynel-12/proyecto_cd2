@@ -26,6 +26,7 @@ class Nuevoproducto extends StatefulWidget {
   bool isEditEstado;
   bool isEditCategoria;
   bool isEditISV;
+  bool isEditStockMinimo;
   String codigo;
   int inventario;
   int stockMinimo;
@@ -33,7 +34,6 @@ class Nuevoproducto extends StatefulWidget {
   double precio;
   double costo;
   String unidadMedida;
-  int stock;
   int proveedorId;
   int categoriaId;
   String estado;
@@ -51,6 +51,7 @@ class Nuevoproducto extends StatefulWidget {
     this.isEditEstado = false,
     this.isEditCategoria = false,
     this.isEditISV = false,
+    this.isEditStockMinimo = false,
     this.codigo = '',
     this.inventario = 0,
     this.stockMinimo = 0,
@@ -58,7 +59,6 @@ class Nuevoproducto extends StatefulWidget {
     this.precio = 0,
     this.costo = 0,
     this.unidadMedida = '',
-    this.stock = 0,
     this.proveedorId = 0,
     this.categoriaId = 0,
     this.estado = '',
@@ -194,6 +194,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
     double costo = double.tryParse(_costo.text) ?? 0.0;
     double isv = double.tryParse(_isv.text) ?? 0.0;
     double precioVenta = (precio * isv / 100) + precio;
+    int stockMinimo = int.tryParse(_stockMinimo.text) ?? widget.stockMinimo;
 
     try {
       final producto = Producto(
@@ -203,7 +204,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
         costo: costo,
         unidadMedida: tipo,
         stock: int.tryParse(_inventario.text) ?? 0,
-        stockMinimo: widget.stockMinimo,
+        stockMinimo: stockMinimo,
         fechaActualizacion: DateTime.now().toIso8601String(),
         fechaCreacion: widget.fechaCreacion,
         proveedorId: _selectedItem?.id ?? 0,
@@ -462,7 +463,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
                 ),
 
               // Stock mínimo (solo en modo agregar)
-              if (!widget.isEdit)
+              if ((widget.isEdit && widget.isEditStockMinimo) || !widget.isEdit)
                 Column(
                   children: [
                     SizedBox(height: fieldSpacing),

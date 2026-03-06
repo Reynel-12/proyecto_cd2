@@ -59,9 +59,6 @@ class _PerfilProductoState extends State<PerfilProducto> {
   String fechaCreacion = '';
   String fechaActualizacion = '';
 
-  List<String> _metodosPago = ['Efectivo', 'Tarjeta', 'Transferencia'];
-  String _metodoPago = 'Efectivo';
-
   @override
   void initState() {
     super.initState();
@@ -188,13 +185,14 @@ class _PerfilProductoState extends State<PerfilProducto> {
           isEditEstado: isEditEstado,
           isEditCategoria: isEditCategoria,
           isEditISV: isEditISV,
-          inventario: inventario,
+          isEditStockMinimo: true,
           nombre: nombre,
           precio: precio,
           costo: costos,
           unidadMedida: unidad,
-          stock: inventario,
+          stockMinimo: stockMinimo,
           proveedorId: widget.idProveedor,
+          inventario: inventario,
           estado: estado,
           isv: isv,
           fechaCreacion: fechaCreacion,
@@ -240,7 +238,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
   void _editInventory() async {
     try {
       final inventario = int.parse(_inventarioController.text);
-      if (inventario == inventario) {
+      if (inventario == this.inventario) {
         _mostrarMensaje(
           'Error',
           'El inventario no ha cambiado',
@@ -1118,18 +1116,6 @@ class _PerfilProductoState extends State<PerfilProducto> {
                       style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
                     ),
                     SizedBox(height: isMobile ? 12.0 : 16.0),
-                    _buildDropdownMetodoPago(
-                      value: _metodoPago,
-                      items: _metodosPago,
-                      label: 'Método de pago',
-                      icon: Icons.payment,
-                      onChanged: (value) {
-                        setState(() {
-                          _metodoPago = value!;
-                        });
-                      },
-                    ),
-                    SizedBox(height: isMobile ? 12.0 : 16.0),
                     Text(
                       'Por favor, asegúrese de ingresar la cantidad correcta.',
                       style: TextStyle(
@@ -1354,18 +1340,6 @@ class _PerfilProductoState extends State<PerfilProducto> {
                       style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
                     ),
                     SizedBox(height: isMobile ? 12.0 : 16.0),
-                    _buildDropdownMetodoPago(
-                      value: _metodoPago,
-                      items: _metodosPago,
-                      label: 'Método de pago',
-                      icon: Icons.payment,
-                      onChanged: (value) {
-                        setState(() {
-                          _metodoPago = value!;
-                        });
-                      },
-                    ),
-                    SizedBox(height: isMobile ? 12.0 : 16.0),
                     Text(
                       'Por favor, asegúrese de ingresar la cantidad correcta.',
                       style: TextStyle(
@@ -1443,84 +1417,5 @@ class _PerfilProductoState extends State<PerfilProducto> {
     ).then((_) {
       _cantidad.clear();
     });
-  }
-
-  Widget _buildDropdownMetodoPago({
-    required String? value,
-    required List<String> items,
-    required String label,
-    required IconData icon,
-    required Function(String?) onChanged,
-    String? Function(String?)? validator,
-  }) {
-    // Obtenemos el tamaño de la pantalla
-    final screenSize = MediaQuery.of(context).size;
-    final bool isMobile = screenSize.width < 600;
-    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
-    final bool isDesktop = screenSize.width >= 900;
-
-    // Ajustamos tamaños según el dispositivo
-    final double labelFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
-    final double inputFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
-    final double verticalPadding = isMobile ? 15.0 : (isTablet ? 16.0 : 18.0);
-    final double horizontalPadding = isMobile ? 10.0 : (isTablet ? 12.0 : 14.0);
-
-    final temaOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
-
-    return DropdownButtonFormField<String>(
-      dropdownColor: temaOscuro ? Colors.black : Colors.white,
-      value: value,
-      items: items.map<DropdownMenuItem<String>>((String item) {
-        return DropdownMenuItem<String>(value: item, child: Text(item));
-      }).toList(),
-      onChanged: onChanged,
-      validator: validator,
-      style: TextStyle(
-        fontSize: inputFontSize,
-        color: temaOscuro ? Colors.white : Colors.black,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          color: temaOscuro ? Colors.white : Colors.black,
-          fontSize: labelFontSize,
-        ),
-        filled: true,
-        fillColor: temaOscuro
-            ? const Color.fromRGBO(30, 30, 30, 1)
-            : Colors.white,
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
-          borderSide: BorderSide(
-            color: temaOscuro ? Colors.white : Colors.black,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            color: temaOscuro ? Colors.white : Colors.black,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
-        ),
-        errorStyle: TextStyle(
-          color: Colors.redAccent,
-          fontWeight: FontWeight.w500,
-          fontSize: isMobile ? 12.0 : 13.0,
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          vertical: verticalPadding,
-          horizontal: horizontalPadding,
-        ),
-      ),
-    );
   }
 }
