@@ -1,3 +1,4 @@
+import 'package:proyecto_cd2/controller/repository_inventario_optimo.dart';
 import 'package:proyecto_cd2/view/categorias_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,6 +23,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final InventarioOptimoRepository _repo = InventarioOptimoRepository();
   @override
   void initState() {
     super.initState();
@@ -50,6 +52,10 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void exportarDatos() {
+    _repo.exportarDatos();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Obtenemos el tamaño de la pantalla
@@ -64,14 +70,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
     final List<DashboardCardData> cards = [
       // if (isAdmin)
-        // DashboardCardData(
-        //   icon: Icons.point_of_sale,
-        //   title: 'Caja',
-        //   onTap: () => Navigator.push(
-        //     context,
-        //     MaterialPageRoute(builder: (_) => const CajaScreen()),
-        //   ),
-        // ),
+      // DashboardCardData(
+      //   icon: Icons.point_of_sale,
+      //   title: 'Caja',
+      //   onTap: () => Navigator.push(
+      //     context,
+      //     MaterialPageRoute(builder: (_) => const CajaScreen()),
+      //   ),
+      // ),
       DashboardCardData(
         icon: Icons.shopping_cart_checkout,
         title: 'Ventas',
@@ -159,6 +165,13 @@ class _MyHomePageState extends State<MyHomePage> {
       //       MaterialPageRoute(builder: (_) => const ConfiguracionSarView()),
       //     ),
       //   ),
+      DashboardCardData(
+        icon: Icons.file_download,
+        title: 'Exportar datos',
+        onTap: () {
+          exportarDatos();
+        },
+      ),
       DashboardCardData(
         icon: Icons.logout,
         title: 'Cerrar sesión',
@@ -338,9 +351,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ? Colors.black
             : Color.fromRGBO(244, 243, 243, 1),
         child: Column(
-          children: [
-            Expanded(child: DashboardGrid(cards: cards)),
-          ],
+          children: [Expanded(child: DashboardGrid(cards: cards))],
         ),
       ),
     );
