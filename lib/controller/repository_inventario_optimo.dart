@@ -192,43 +192,106 @@ class InventarioOptimoRepository {
   /// Cada fila = 1 ítem vendido con datos de cabecera de factura,
   /// producto, categoría y proveedor.
   /// Retorna la ruta del archivo generado.
-  Future<String> exportarVentasCSV() async {
-    final db = await _dbHelper.database;
+  // Future<String> exportarVentasCSV() async {
+  //   final db = await _dbHelper.database;
 
+  //   final rows = await db.rawQuery('''
+  //     SELECT
+  //       v.id_venta,
+  //       v.numero_factura,
+  //       v.fecha,
+  //       v.tipo_documento,
+  //       v.cajero,
+  //       v.metodo_pago,
+  //       v.nombre_cliente,
+  //       v.moneda,
+  //       v.subtotal       AS subtotal_factura,
+  //       v.isv            AS isv_factura,
+  //       v.total          AS total_factura,
+  //       v.monto_pagado,
+  //       v.cambio,
+  //       v.estado_fiscal,
+  //       dv.id_detalle_venta,
+  //       dv.producto_id,
+  //       dv.descripcion   AS descripcion_linea,
+  //       c.nombre         AS categoria,
+  //       pr.nombre        AS proveedor,
+  //       p.unidad_medida,
+  //       dv.cantidad,
+  //       dv.precio_unitario,
+  //       dv.subtotal      AS subtotal_linea,
+  //       dv.isv           AS isv_linea,
+  //       dv.descuento
+  //     FROM ventas v
+  //     INNER JOIN detalle_ventas dv ON v.id_venta = dv.venta_id
+  //     INNER JOIN productos p       ON dv.producto_id = p.id_producto
+  //     LEFT  JOIN categorias c      ON p.categoria_id = c.id_categoria
+  //     LEFT  JOIN proveedores pr    ON p.proveedor_id = pr.id_proveedor
+  //     ORDER BY v.fecha ASC, v.id_venta ASC, dv.id_detalle_venta ASC
+  //   ''');
+
+  //   final header = [
+  //     'id_venta',
+  //     'numero_factura',
+  //     'fecha',
+  //     'tipo_documento',
+  //     'cajero',
+  //     'metodo_pago',
+  //     'nombre_cliente',
+  //     'moneda',
+  //     'subtotal_factura',
+  //     'isv_factura',
+  //     'total_factura',
+  //     'monto_pagado',
+  //     'cambio',
+  //     'estado_fiscal',
+  //     'id_detalle_venta',
+  //     'producto_id',
+  //     'descripcion_linea',
+  //     'categoria',
+  //     'proveedor',
+  //     'unidad_medida',
+  //     'cantidad',
+  //     'precio_unitario',
+  //     'subtotal_linea',
+  //     'isv_linea',
+  //     'descuento',
+  //   ];
+
+  //   final body = rows.map((row) {
+  //     return header.map((col) {
+  //       var value = row[col];
+
+  //       // Devolvemos el valor o un string vacío si es null para otros campos
+  //       return value ?? '';
+  //     }).toList();
+  //   }).toList();
+
+  //   return _writeCsv('ventas.csv', [header, ...body]);
+  // }
+
+  /// devuelve solo el “header” de las ventas, una fila por factura.
+  Future<String> exportarVentasCabeceraCSV() async {
+    final db = await _dbHelper.database;
     final rows = await db.rawQuery('''
-      SELECT
-        v.id_venta,
-        v.numero_factura,
-        v.fecha,
-        v.tipo_documento,
-        v.cajero,
-        v.metodo_pago,
-        v.nombre_cliente,
-        v.moneda,
-        v.subtotal       AS subtotal_factura,
-        v.isv            AS isv_factura,
-        v.total          AS total_factura,
-        v.monto_pagado,
-        v.cambio,
-        v.estado_fiscal,
-        dv.id_detalle_venta,
-        dv.producto_id,
-        dv.descripcion   AS descripcion_linea,
-        c.nombre         AS categoria,
-        pr.nombre        AS proveedor,
-        p.unidad_medida,
-        dv.cantidad,
-        dv.precio_unitario,
-        dv.subtotal      AS subtotal_linea,
-        dv.isv           AS isv_linea,
-        dv.descuento
-      FROM ventas v
-      INNER JOIN detalle_ventas dv ON v.id_venta = dv.venta_id
-      INNER JOIN productos p       ON dv.producto_id = p.id_producto
-      LEFT  JOIN categorias c      ON p.categoria_id = c.id_categoria
-      LEFT  JOIN proveedores pr    ON p.proveedor_id = pr.id_proveedor
-      ORDER BY v.fecha ASC, v.id_venta ASC, dv.id_detalle_venta ASC
-    ''');
+    SELECT
+      id_venta,
+      numero_factura,
+      fecha,
+      tipo_documento,
+      cajero,
+      metodo_pago,
+      nombre_cliente,
+      moneda,
+      subtotal       AS subtotal_factura,
+      isv            AS isv_factura,
+      total          AS total_factura,
+      monto_pagado,
+      cambio,
+      estado_fiscal
+    FROM ventas
+    ORDER BY fecha ASC, id_venta ASC
+  ''');
 
     final header = [
       'id_venta',
@@ -245,7 +308,41 @@ class InventarioOptimoRepository {
       'monto_pagado',
       'cambio',
       'estado_fiscal',
+    ];
+
+    final body = rows
+        .map((r) => header.map((c) => r[c] ?? '').toList())
+        .toList();
+    return _writeCsv('ventas.csv', [header, ...body]);
+  }
+
+  /// exporta únicamente las líneas de detalle (sin repetición de totales).
+  Future<String> exportarVentasDetalleCSV() async {
+    final db = await _dbHelper.database;
+    final rows = await db.rawQuery('''
+    SELECT
+      dv.id_detalle_venta,
+      dv.venta_id,
+      dv.producto_id,
+      dv.descripcion   AS descripcion_linea,
+      c.nombre         AS categoria,
+      pr.nombre        AS proveedor,
+      p.unidad_medida,
+      dv.cantidad,
+      dv.precio_unitario,
+      dv.subtotal      AS subtotal_linea,
+      dv.isv           AS isv_linea,
+      dv.descuento
+    FROM detalle_ventas dv
+    INNER JOIN productos p       ON dv.producto_id = p.id_producto
+    LEFT  JOIN categorias c      ON p.categoria_id = c.id_categoria
+    LEFT  JOIN proveedores pr    ON p.proveedor_id = pr.id_proveedor
+    ORDER BY dv.venta_id ASC, dv.id_detalle_venta ASC
+  ''');
+
+    final header = [
       'id_detalle_venta',
+      'venta_id',
       'producto_id',
       'descripcion_linea',
       'categoria',
@@ -258,16 +355,10 @@ class InventarioOptimoRepository {
       'descuento',
     ];
 
-    final body = rows.map((row) {
-      return header.map((col) {
-        var value = row[col];
-
-        // Devolvemos el valor o un string vacío si es null para otros campos
-        return value ?? '';
-      }).toList();
-    }).toList();
-
-    return _writeCsv('ventas.csv', [header, ...body]);
+    final body = rows
+        .map((r) => header.map((c) => r[c] ?? '').toList())
+        .toList();
+    return _writeCsv('ventas_detalle.csv', [header, ...body]);
   }
 
   // ── 2. PRODUCTOS ──────────────────────────────────────────────────────────
@@ -397,11 +488,13 @@ class InventarioOptimoRepository {
   /// Exporta los tres CSV (ventas, productos, proveedores) de una sola vez.
   /// Retorna un mapa con las rutas de cada archivo generado.
   Future<Map<String, String>> exportarTodosLosCSV() async {
-    final ventas = await exportarVentasCSV();
+    final ventas = await exportarVentasCabeceraCSV();
+    final ventasDetalle = await exportarVentasDetalleCSV();
     final productos = await exportarProductosCSV();
     final proveedores = await exportarProveedoresCSV();
     return {
       'ventas': ventas,
+      'ventas_detalle': ventasDetalle,
       'productos': productos,
       'proveedores': proveedores,
     };
