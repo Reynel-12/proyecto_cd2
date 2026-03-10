@@ -325,9 +325,6 @@ class InventarioOptimoRepository {
       dv.venta_id,
       dv.producto_id,
       dv.descripcion   AS descripcion_linea,
-      c.nombre         AS categoria,
-      pr.nombre        AS proveedor,
-      p.unidad_medida,
       dv.cantidad,
       dv.precio_unitario,
       dv.subtotal      AS subtotal_linea,
@@ -345,9 +342,6 @@ class InventarioOptimoRepository {
       'venta_id',
       'producto_id',
       'descripcion_linea',
-      'categoria',
-      'proveedor',
-      'unidad_medida',
       'cantidad',
       'precio_unitario',
       'subtotal_linea',
@@ -440,7 +434,7 @@ class InventarioOptimoRepository {
 
     // Para cada proveedor, obtener sus días de reposición
     final header = [
-      'id_proveedor',
+      'proveedor_id',
       'nombre',
       'direccion',
       'telefono',
@@ -501,7 +495,19 @@ class InventarioOptimoRepository {
   }
 
   /// Compatibilidad con código existente: exporta los tres CSV en background.
-  Future<void> exportarDatos() async {
-    print(await exportarTodosLosCSV());
+  Future<ResultadoExportacion> exportarDatos() async {
+    try {
+      final datos = await exportarTodosLosCSV();
+      return ResultadoExportacion(true, datos);
+    } catch (e) {
+      return ResultadoExportacion(false, {'error': e.toString()});
+    }
   }
+}
+
+class ResultadoExportacion {
+  final bool exito;
+  final Map<String, String> datos;
+
+  ResultadoExportacion(this.exito, this.datos);
 }

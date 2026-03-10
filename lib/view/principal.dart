@@ -1,3 +1,4 @@
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:proyecto_cd2/controller/repository_inventario_optimo.dart';
 import 'package:proyecto_cd2/view/categorias_view.dart';
 import 'package:flutter/material.dart';
@@ -52,8 +53,61 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void exportarDatos() {
-    _repo.exportarDatos();
+  Future<void> exportarDatos() async {
+    final ResultadoExportacion resultadoExportacion = await _repo
+        .exportarDatos();
+    if (!mounted) return;
+
+    if (resultadoExportacion.exito && resultadoExportacion.datos.isNotEmpty) {
+      final String ventas = resultadoExportacion.datos['ventas'] ?? '';
+      final String ventasDetalle =
+          resultadoExportacion.datos['ventas_detalle'] ?? '';
+      final String productos = resultadoExportacion.datos['productos'] ?? '';
+      final String proveedores =
+          resultadoExportacion.datos['proveedores'] ?? '';
+      final String mensaje =
+          'Ventas: $ventas,\n Ventas Detalle: $ventasDetalle,\n Productos: $productos,\n Proveedores: $proveedores';
+      mostrarDialog('Exportación exitosa', mensaje, DialogType.success);
+      return;
+    }
+
+    final String error =
+        resultadoExportacion.datos['error']?.trim().isNotEmpty == true
+        ? resultadoExportacion.datos['error']!
+        : 'Ocurrió un error desconocido.';
+    mostrarDialog(
+      'Error al exportar',
+      'Error al exportar: $error',
+      DialogType.error,
+    );
+  }
+
+  void mostrarDialog(String title, String desc, DialogType dialogType) {
+    // Obtenemos el tamaño de la pantalla
+    final screenSize = MediaQuery.of(context).size;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+    final bool isDesktop = screenSize.width >= 900;
+
+    // Calculamos el ancho del awesomeDialog según el tamaño de pantalla
+    final double dialogWidth = isDesktop
+        ? screenSize.width * 0.3
+        : (isTablet ? screenSize.width * 0.5 : screenSize.width * 0.8);
+    AwesomeDialog(
+      width: isDesktop ? (screenSize.width - dialogWidth) / 2 : 24.0,
+      dialogBackgroundColor:
+          Provider.of<TemaProveedor>(context, listen: false).esModoOscuro
+          ? Color.fromRGBO(60, 60, 60, 1)
+          : Color.fromRGBO(220, 220, 220, 1),
+      context: context,
+      dialogType: dialogType,
+      animType: AnimType.scale,
+      title: title,
+      desc: desc,
+      btnCancelText: 'Cancelar',
+      btnOkText: 'Aceptar',
+      btnOkOnPress: () {},
+      btnCancelOnPress: () {},
+    ).show();
   }
 
   @override
