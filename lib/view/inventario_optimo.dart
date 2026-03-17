@@ -158,12 +158,26 @@ class _InventarioOptimoState extends State<InventarioOptimo> {
   }
 
   /// Filtra las recomendaciones para mostrar sólo las que coinciden con
-  /// los productos actualmente en [_productosMapFiltrados].
+  /// los productos actualmente en [_productosMapFiltrados], y además ordena
+  /// el resultado alfabéticamente por nombre del producto (o por código si
+  /// no se encuentra el producto).
   List<RecomendacionCompra> get _recomendacionesFiltradas {
     if (_resultado == null) return [];
-    return _resultado!.recomendaciones
+
+    final lista = _resultado!.recomendaciones
         .where((r) => _productosMapFiltrados.containsKey(r.codigoProducto))
         .toList();
+
+    // ordenar por nombre o, en su defecto, por código
+    lista.sort((a, b) {
+      final nombreA =
+          _productosMapFiltrados[a.codigoProducto]?.nombre ?? a.codigoProducto;
+      final nombreB =
+          _productosMapFiltrados[b.codigoProducto]?.nombre ?? b.codigoProducto;
+      return nombreA.toLowerCase().compareTo(nombreB.toLowerCase());
+    });
+
+    return lista;
   }
 
   @override

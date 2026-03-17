@@ -49,6 +49,7 @@ class _InventarioState extends State<Inventario> {
       });
       repositoryProducto.getProductos().then((productos) {
         setState(() {
+          productos.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
           _productos = productos;
           _productosFiltrados = productos;
           isLoading = false;

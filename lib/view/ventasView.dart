@@ -60,6 +60,9 @@ class _VentasState extends State<Ventas> {
       _productosFiltrados.clear();
       repositoryProducto.getProductosActivos().then((productos) {
         setState(() {
+          productos.sort(
+            (a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()),
+          );
           _productos = productos;
           _productosFiltrados = productos;
           isLoading = false;
@@ -76,6 +79,9 @@ class _VentasState extends State<Ventas> {
       _productosFiltrados.clear();
       repositoryProducto.getProductos().then((productos) {
         setState(() {
+          productos.sort(
+            (a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()),
+          );
           _productos = productos;
           _productosFiltrados = productos;
         });
@@ -420,8 +426,12 @@ class _VentasState extends State<Ventas> {
 
   Future<void> finalizarVenta(String cambio, String cliente) async {
     try {
-      final rtn = _rtnController.text.trim().isEmpty ? '00000000000000' : _rtnController.text.trim();
-      final nombre = _nombreClienteController.text.trim().isEmpty ? 'Consumidor Final' : _nombreClienteController.text.trim();
+      final rtn = _rtnController.text.trim().isEmpty
+          ? '00000000000000'
+          : _rtnController.text.trim();
+      final nombre = _nombreClienteController.text.trim().isEmpty
+          ? 'Consumidor Final'
+          : _nombreClienteController.text.trim();
       double isv = 0.0;
       double subtotal = 0.0;
       double total = 0.0;
