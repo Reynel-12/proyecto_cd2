@@ -10,10 +10,8 @@ Proyecto CD2 es un sistema integral de **Punto de Venta (POS) e Inventario** des
 ## 🚀 Características Principales
 
 * **📦 Gestión de Inventario Inteligente:** Integración con API de Machine Learning (Python) para calcular el "Inventario Óptimo" basado en historial de ventas, stock actual y métricas de error (MAE).
-* **🛒 Punto de Venta (Cajas):** Sistema de cajas independiente por usuario. Múltiples usuarios pueden operar sus propias cajas registrando ventas e historial de forma aislada.
 * **🔐 Roles y Permisos Granulares:** Sistema de seguridad basado en permisos modulares. Los administradores pueden otorgar o denegar acceso a módulos específicos (Ventas, Inventario, Usuarios, etc.) para cada perfil.
 * **📊 Exportación para Inteligencia de Negocios (BI):** Generación y exportación de datos (Ventas, Proveedores, Productos) en formato CSV, listos para procesos ETL y análisis en dashboards de herramientas como Power BI.
-* **📄 Generación de Recibos y Reportes:** Creación e impresión de recibos de ventas en PDF.
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -21,7 +19,7 @@ Proyecto CD2 es un sistema integral de **Punto de Venta (POS) e Inventario** des
 * **Gestión de Estado:** Provider
 * **Base de Datos Local:** SQLite (`sqflite` / `sqflite_common_ffi` para Desktop)
 * **Backend de Predicciones (Local API):** Python (Flask/FastAPI, Scikit-learn, Pandas)
-* **Otras Librerías:** `http`, `shared_preferences`, `pdf`, `printing`, `csv`, `awesome_dialog`.
+* **Otras Librerías:** `http`, `shared_preferences`, `csv`, `awesome_dialog`.
 
 ## 📋 Requisitos Previos
 
@@ -82,15 +80,3 @@ El código fuente sigue un patrón de arquitectura MVC/MVVM aproximado, organiza
 * `lib/view/`: Contiene todas las pantallas y la interfaz de usuario (ej. `principal.dart`, `ventasView.dart`, `inventario_optimo.dart`).
 * `lib/model/`: Define las estructuras de datos y entidades del negocio (ej. `inventario_optimo.dart`, cajas, ventas, usuarios).
 * `lib/controller/` (o repositories): Contiene la lógica de negocio, consultas a SQLite, y llamadas HTTP a la API de Python (ej. `repository_inventario_optimo.dart`).
-
-## 🤝 Contribución
-
-Si deseas contribuir al proyecto:
-1. Haz un Fork del repositorio.
-2. Crea una rama para tu característica (`git checkout -b feature/NuevaCaracteristica`).
-3. Haz Commit de tus cambios (`git commit -m 'Añadir nueva característica'`).
-4. Haz Push a la rama (`git push origin feature/NuevaCaracteristica`).
-5. Abre un Pull Request.
-
----
-*Desarrollado para la optimización de ventas e inventarios utilizando tecnologías modernas.*
